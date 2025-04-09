@@ -19,10 +19,9 @@ public class SearchActivity extends AppCompatActivity {
         searchButton.setOnClickListener(view -> {
             String city = cityInput.getText().toString().trim();
             if (!city.isEmpty()) {
-                Intent intent = new Intent(SearchActivity.this, MainActivity.class);
+                Intent intent = new Intent(SearchActivity.this, SearchResultActivity.class);
                 intent.putExtra("cityName", city);
                 startActivity(intent);
-                finish();
             } else {
                 Toast.makeText(this, "Please enter a city", Toast.LENGTH_SHORT).show();
             }
