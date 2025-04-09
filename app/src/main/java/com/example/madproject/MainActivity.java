@@ -1,41 +1,36 @@
 package com.example.madproject;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import com.android.volley.*;
-import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.*;
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
-    EditText cityInput;
-    Button searchBtn;
-    TextView tempText, conditionText, humidityText, windText;
-    String API_KEY = "";
+    LinearLayout cardContainer;
+    String API_KEY = "68a703a3805ca7ab29eef3513c31a3d3";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cityInput = findViewById(R.id.cityInput);
-        searchBtn = findViewById(R.id.searchBtn);
-        tempText = findViewById(R.id.tempText);
-        conditionText = findViewById(R.id.conditionText);
-        humidityText = findViewById(R.id.humidityText);
-        windText = findViewById(R.id.windText);
+        cardContainer = findViewById(R.id.cardContainer);
 
-        searchBtn.setOnClickListener(view -> {
-            String city = cityInput.getText().toString().trim();
-            if (!city.isEmpty()) {
-                getWeather(city);
-            } else {
-                Toast.makeText(MainActivity.this, "Enter city name", Toast.LENGTH_SHORT).show();
-            }
+        findViewById(R.id.searchBtn).setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, SearchActivity.class));
         });
+
+        String city = getIntent().getStringExtra("cityName");
+        if (city != null && !city.isEmpty()) {
+            getWeather(city);
+        }
     }
 
     private void getWeather(String city) {
@@ -55,10 +50,7 @@ public class MainActivity extends AppCompatActivity {
                         String humidity = "Humidity: " + main.getString("humidity") + "%";
                         String windSpeed = "Wind: " + wind.getString("speed") + " km/h";
 
-                        tempText.setText(temp);
-                        conditionText.setText(condition);
-                        humidityText.setText(humidity);
-                        windText.setText(windSpeed);
+                        addWeatherCard(city, temp, condition, humidity, windSpeed);
 
                     } catch (Exception e) {
                         Toast.makeText(MainActivity.this, "Error parsing data", Toast.LENGTH_SHORT).show();
@@ -68,5 +60,18 @@ public class MainActivity extends AppCompatActivity {
         );
 
         queue.add(request);
+    }
+
+    private void addWeatherCard(String city, String temp, String condition, String humidity, String wind) {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View card = inflater.inflate(R.layout.weather_card, cardContainer, false);
+
+        ((TextView) card.findViewById(R.id.cardCityName)).setText(city);
+        ((TextView) card.findViewById(R.id.cardTemp)).setText(temp);
+        ((TextView) card.findViewById(R.id.cardCondition)).setText(condition);
+        ((TextView) card.findViewById(R.id.cardHumidity)).setText(humidity);
+        ((TextView) card.findViewById(R.id.cardWind)).setText(wind);
+
+        cardContainer.addView(card);
     }
 }
