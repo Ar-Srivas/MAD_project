@@ -37,25 +37,17 @@ public class SearchResultActivity extends AppCompatActivity {
 
         favBtn.setOnClickListener(v -> {
             if (city != null && !city.isEmpty()) {
-                SharedPreferences prefs = getSharedPreferences("favourites", MODE_PRIVATE);
-                String stored = prefs.getString("cityList", "[]");
+                DBHelper dbHelper = new DBHelper(this);
 
-                try {
-                    JSONArray jsonArray = new JSONArray(stored);
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        if (jsonArray.getString(i).equalsIgnoreCase(city)) {
-                            Toast.makeText(this, city + " is already in favourites!", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                    }
-                    jsonArray.put(city);
-                    prefs.edit().putString("cityList", jsonArray.toString()).apply();
+                if (dbHelper.isFavorite(city)) {
+                    Toast.makeText(this, city + " is already in favourites!", Toast.LENGTH_SHORT).show();
+                } else {
+                    dbHelper.addFavorite(city);
                     Toast.makeText(this, city + " added to favourites!", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Toast.makeText(this, "Failed to add favourite", Toast.LENGTH_SHORT).show();
                 }
             }
         });
+
 
 
 

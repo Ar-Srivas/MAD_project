@@ -9,16 +9,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.android.volley.*;
 import com.android.volley.toolbox.*;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
-import java.util.*;
+import java.util.ArrayList;
 
 public class FavouritesActivity extends AppCompatActivity {
 
     private LinearLayout cardContainer;
     private final String API_KEY = "68a703a3805ca7ab29eef3513c31a3d3";
     private boolean useCelsius = true;
-    private SharedPreferences favPrefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,11 +24,9 @@ public class FavouritesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_favourites);
 
         cardContainer = findViewById(R.id.favCardContainer);
-        favPrefs = getSharedPreferences("favourites", MODE_PRIVATE);
-
         findViewById(R.id.backBtn).setOnClickListener(v -> finish());
 
-        // Load unit preference
+        // Load unit preference from Settings
         SharedPreferences prefs = getSharedPreferences("Settings", MODE_PRIVATE);
         useCelsius = prefs.getBoolean("useCelsius", true);
     }
@@ -40,25 +36,18 @@ public class FavouritesActivity extends AppCompatActivity {
         super.onResume();
         cardContainer.removeAllViews();
 
-        SharedPreferences prefs = getSharedPreferences("favourites", MODE_PRIVATE);
-        String stored = prefs.getString("cityList", "[]");
+        // Fetch city names from DB
+        DBHelper dbHelper = new DBHelper(this);
+        ArrayList<String> favoriteCities = dbHelper.getFavorites();
 
-        try {
-            JSONArray jsonArray = new JSONArray(stored);
-            for (int i = 0; i < jsonArray.length(); i++) {
-                String city = jsonArray.getString(i);
-                fetchAndDisplayWeather(city);
-            }
-        } catch (Exception e) {
-            Toast.makeText(this, "Failed to load favourites", Toast.LENGTH_SHORT).show();
+        for (String city : favoriteCities) {
+            fetchAndDisplayWeather(city);
         }
     }
-
 
     private void fetchAndDisplayWeather(String city) {
         String units = useCelsius ? "metric" : "imperial";
         String unitSymbol = useCelsius ? "°C" : "°F";
-
         String url = "https://api.openweathermap.org/data/2.5/weather?q=" + city +
                 "&appid=" + API_KEY + "&units=" + units;
 
@@ -75,7 +64,7 @@ public class FavouritesActivity extends AppCompatActivity {
 
                         addWeatherCard(city, temp, condition, humidity, windSpeed);
                     } catch (Exception e) {
-                        Toast.makeText(this, "Error parsing data", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Error parsing data for " + city, Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> Toast.makeText(this, "Failed to load weather for " + city, Toast.LENGTH_SHORT).show()
@@ -94,28 +83,13 @@ public class FavouritesActivity extends AppCompatActivity {
         ((TextView) card.findViewById(R.id.cardHumidity)).setText(humidity);
         ((TextView) card.findViewById(R.id.cardWind)).setText(wind);
 
-        Button removeBtn = new Button(this);
-        removeBtn.setText("Remove");
+        Button removeBtn = card.findViewById(R.id.removeBtn);
         removeBtn.setOnClickListener(v -> {
-            SharedPreferences prefs = getSharedPreferences("favourites", MODE_PRIVATE);
-            String stored = prefs.getString("cityList", "[]");
-            try {
-                JSONArray jsonArray = new JSONArray(stored);
-                JSONArray updated = new JSONArray();
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    if (!jsonArray.getString(i).equalsIgnoreCase(city)) {
-                        updated.put(jsonArray.getString(i));
-                    }
-                }
-                prefs.edit().putString("cityList", updated.toString()).apply();
-                cardContainer.removeView(card);
-            } catch (Exception e) {
-                Toast.makeText(this, "Error removing city", Toast.LENGTH_SHORT).show();
-            }
+            DBHelper dbHelper = new DBHelper(this);
+            dbHelper.removeFavorite(city);
+            cardContainer.removeView(card);
         });
 
-
-        ((LinearLayout) card).addView(removeBtn);
         cardContainer.addView(card);
     }
 }
